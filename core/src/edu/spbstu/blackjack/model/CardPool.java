@@ -32,6 +32,6 @@ public class CardPool
 
   public Card getCard()
   {
-    return Cards.remove((int)(Math.random() * Face.values().length * Suit.values().length));
+    return Cards.remove((int)(Math.random() * Cards.size()));
   }
 }

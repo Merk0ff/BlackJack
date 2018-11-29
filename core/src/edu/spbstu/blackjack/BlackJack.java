@@ -3,13 +3,11 @@ package edu.spbstu.blackjack;
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
-import com.badlogic.gdx.InputProcessor;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 import edu.spbstu.blackjack.model.Card.Card;
@@ -23,39 +21,46 @@ import java.util.ArrayList;
 
 public class BlackJack extends ApplicationAdapter
 {
-  SpriteBatch batch;
-  ArrayList<Texture> cardsTexture;
-  Texture backgroundTexture;
-  ArrayList<Texture> controlsTexture;
-  ArrayList<Texture> stateTextures;
-  BitmapFont font;
+  private SpriteBatch batch;
+  //private ArrayList<Texture> cardsTexture;
+  private Texture cardsTexture[];
+  private Texture cardBack;
+  private Texture backgroundTexture;
+  private ArrayList<Texture> controlsTexture;
+  private ArrayList<Texture> stateTextures;
 
-  Viewport viewPort;
-  final static int WINDOW_W = 960;
-  final static int WINDOW_H = 540;
+  private ArrayList<Card> drawingCards;
+  private CardPool cardPool = new CardPool();
+  private BitmapFont font;
 
-  final static int startMoney = 500;
+  private Viewport viewPort;
+  public final static int WINDOW_W = 960;
+  public final static int WINDOW_H = 540;
 
-  Player dealer = new Player(0), gamer = new Player(startMoney);
-  CardPool cardPool = new CardPool();
-  Integer highScore = startMoney;
+  private final static int startMoney = 500;
+
+  private Player dealer = new Player(0), gamer = new Player(startMoney);
+ // CardPool cardPool = new CardPool();
+  private Integer highScore = startMoney;
 
   private void loadData()
   {
     font = new BitmapFont();
 
-    cardsTexture = new ArrayList<Texture>();
+    cardsTexture = new Texture[54];
     controlsTexture = new ArrayList<Texture>();
     stateTextures = new ArrayList<Texture>();
+    cardBack = new Texture("card_back.png");
+    drawingCards = new ArrayList<Card>();
 
     for (int j = 0; j < Suit.values().length; j++)
       for (int i = 2; i <= 10; i++)
-        cardsTexture.add(new Texture(i + "_of_" + Suit.values()[j].name().toLowerCase() + ".png"));
+        cardsTexture[j * 13 + i - 2] = new Texture(i + "_of_" + Suit.values()[j].name().toLowerCase() + ".png");
 
     for (int j = 0; j < Suit.values().length; j++)
       for (int i = 9; i <= 12; i++)
-        cardsTexture.add(new Texture(Face.values()[i].name().toLowerCase()
-                                     + "_of_" + Suit.values()[j].name().toLowerCase() + ".png"));
+        cardsTexture[j * 13 + i] = new Texture(Face.values()[i].name().toLowerCase()
+                                                 + "_of_" + Suit.values()[j].name().toLowerCase() + ".png");
 
 //    backgroundTexture = new Texture("backgroungTexture.gif");
 //
@@ -67,6 +72,7 @@ public class BlackJack extends ApplicationAdapter
   public void create()
   {
     loadData();
+    //drawingCards = new ArrayList<Card>();
     viewPort = new FitViewport(WINDOW_W, WINDOW_H);
     batch = new SpriteBatch();
     Gdx.graphics.setDisplayMode(WINDOW_W, WINDOW_H, false);
@@ -83,16 +89,50 @@ public class BlackJack extends ApplicationAdapter
     controlHandle();
     font.getRegion().getTexture().setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
     font.setColor(Color.BLACK);
-    batch.end();
-    //for (int i = 0; i < cardsTexture.size(); i++)
-    //  batch.draw(cardsTexture.get(i), cardsTexture.get(i).getWidth() * i, 0);
 
+    for (Card c : drawingCards)
+      if (c.isVisibility())
+      {
+        Texture cT = cardsTexture[c.getFace().ordinal() + c.getSuit().ordinal() * 13];
+        try
+        {
+        font.draw(batch, c.getFace().name() + " " + c.getSuit().name(), cT.getWidth() / 2, cT.getHeight() / 2 + 30);
+        batch.draw(cT, 0, 0, cT.getWidth() / 2, cT.getHeight() / 2);
+        }
+        catch (Exception e)
+        {
+          System.out.println(c.getFace());
+        }
+      }
+      else
+      {
+        batch.draw(cardBack, 0, 0, cardBack.getWidth() / 2, cardBack.getHeight() / 2);
+      }
+
+    batch.end();
   }
 
-  public void controlHandle()
+  private void controlHandle()
   {
-    //if (Gdx.input.isKeyPressed(Input.Keys.ANY_KEY))
-    font.draw(batch, "Hello World!", WINDOW_W / 2, WINDOW_H / 2);
+    if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE))
+    {
+      batch.end();
+    }
+    else if (Gdx.input.isKeyJustPressed(Input.Keys.F))
+    {
+//      Card index = cardPool.getCard();
+//      drawingCards.add(index);
+      drawingCards.get(drawingCards.size() - 1).flipCard();
+    }
+    else if (Gdx.input.isKeyJustPressed(Input.Keys.D))
+    {
+      drawingCards.remove(drawingCards.size() - 1);
+    }
+    else if (Gdx.input.isKeyJustPressed(Input.Keys.ANY_KEY))
+    {
+      Card c = cardPool.getCard();
+      drawingCards.add(c);
+    }
   }
 
   @Override

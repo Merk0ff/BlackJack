@@ -1,11 +1,15 @@
 package edu.spbstu.blackjack.model.Card;
 
+import com.badlogic.gdx.graphics.Texture;
 import org.jetbrains.annotations.Contract;
 
 public class Card
 {
   private final Suit suit;
   private final Face face;
+
+  // Here i dropped an idea about MVC
+  //private final Texture texture;
 
   private boolean visibility;
 
@@ -34,7 +38,12 @@ public class Card
     return visibility;
   }
 
-  protected void flipCard()
+//  public Texture getTexture()
+//  {
+//    return texture;
+//  }
+
+  public void flipCard()
   {
     visibility = !visibility;
   }
