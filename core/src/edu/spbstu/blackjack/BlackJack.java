@@ -16,8 +16,6 @@ import edu.spbstu.blackjack.model.Card.Suit;
 import edu.spbstu.blackjack.model.CardPool;
 import edu.spbstu.blackjack.model.Player;
 
-import java.util.ArrayList;
-
 /**
  * Core unit class
  *
@@ -40,6 +38,10 @@ public class BlackJack extends ApplicationAdapter
 
   private CardPool cardPool = new CardPool();  // Card pool of the round
   private final static int startMoney = 500;   // Static start money
+
+  private boolean pause = false;    // Pause state variable
+  private boolean setPause = false; // Set or unset pause
+  private long time = 0;
 
   // Round state
   // 3 - Ai time
@@ -161,6 +163,16 @@ public class BlackJack extends ApplicationAdapter
 
     batch.begin();
 
+    if (setPause)
+    {
+      setPause = false;
+      pause = true;
+      time = System.currentTimeMillis();
+    }
+
+    if (pause && System.currentTimeMillis() >= time + 2000)
+      pause = false;
+
     if (roundState == 2)
     {
       renderHands();
@@ -187,19 +199,21 @@ public class BlackJack extends ApplicationAdapter
       font.draw(batch, "YOU LOSE", WINDOW_W / 2, WINDOW_H / 2 + 30);
       font.draw(batch, "Your have: " + gamer.getMoney(), WINDOW_W / 2, WINDOW_H / 2 + 10);
       font.draw(batch, "Your win rate: " + gamer.getWinRate(), WINDOW_W / 2, WINDOW_H / 2 - 10);
-      font.draw(batch, "Press R to restart", WINDOW_W / 2, WINDOW_H / 2 - 30);
+      font.draw(batch, "R for the next round", WINDOW_W / 2, WINDOW_H / 2 - 30);
     }
     else if (roundState == 1)
     {
       font.draw(batch, "YOU WIN", WINDOW_W / 2, WINDOW_H / 2 + 30);
       font.draw(batch, "Your have: " + gamer.getMoney(), WINDOW_W / 2, WINDOW_H / 2 + 10);
       font.draw(batch, "Your win rate: " + gamer.getWinRate(), WINDOW_W / 2, WINDOW_H / 2 - 10);
-      font.draw(batch, "Press R to restart", WINDOW_W / 2, WINDOW_H / 2 - 30);
+      font.draw(batch, "R for the next round", WINDOW_W / 2, WINDOW_H / 2 - 30);
     }
     else if (roundState == -3)
     {
-      font.draw(batch, "GAME OVER", WINDOW_W / 2, WINDOW_H / 2 + 30);
-      font.draw(batch, "Press R to restart", WINDOW_W / 2, WINDOW_H / 2 + 10);
+      font.draw(batch, "GAME OVER", WINDOW_W / 3, WINDOW_H / 2 + 30);
+      font.draw(batch, "Your win rate: " + gamer.getWinRate(), WINDOW_W / 3, WINDOW_H / 2 - 10);
+      font.draw(batch, "Your high score rate: " + gamer.getHighScore(), WINDOW_W / 3, WINDOW_H / 2 - 30);
+      font.draw(batch, "Press R to restart", WINDOW_W / 3, WINDOW_H / 2 + 10);
     }
 
     batch.end();
@@ -222,7 +236,7 @@ public class BlackJack extends ApplicationAdapter
     {
       // Bet placement stage
       case -2:
-        if (Gdx.input.isKeyJustPressed(Input.Keys.W) && gamer.getMoney() >= betPlaced - 100)
+        if (Gdx.input.isKeyJustPressed(Input.Keys.W) && gamer.getMoney() >= betPlaced + 100)
           betPlaced += 100;
         else if (Gdx.input.isKeyJustPressed(Input.Keys.S) && betPlaced >= 100)
           betPlaced -= 100;
@@ -244,6 +258,7 @@ public class BlackJack extends ApplicationAdapter
       case -3:
         if (Gdx.input.isKeyJustPressed(Input.Keys.R))
           roundState = -30;
+        break;
       case 1:
       case -1:
         if (Gdx.input.isKeyJustPressed(Input.Keys.R))
@@ -252,25 +267,12 @@ public class BlackJack extends ApplicationAdapter
     }
   }
 
-  /**
-   * JDX resize override
-   */
-  @Override
-  public void resize(int width, int height)
-  {
-    WINDOW_W = width;
-    WINDOW_H = height;
-    viewPort.update(width, height);
-  }
-
   private void gameLogic()
   {
     switch (roundState)
     {
       case 0:
-        //gamer.changeMoney(-betPlaced);
-
-        cardPool.shuffle();
+       cardPool.shuffle();
 
         dealer.takeCard(cardPool);
         dealer.takeCard(cardPool);
@@ -290,21 +292,30 @@ public class BlackJack extends ApplicationAdapter
         break;
 
       case 3:
+        if (pause)
+          return;
+
         for (Card c : dealer.getCards())
           if (!c.isVisibility())
           {
             c.flipCard();
+            setPause = true;
             return;
           }
 
-        if (dealer.getCardSum() <= 17)
+        if (dealer.getCardSum() <= 17 && dealer.getCardSum() < gamer.getCardSum())
+        {
           dealer.takeCard(cardPool, true);
+          setPause = true;
+        }
         else if (dealer.getCardSum() > 21)
           roundState = 10;
         else if (dealer.getCardSum() > gamer.getCardSum())
           roundState = -10;
         else
           roundState = 10;
+
+        break;
 
       case 10:
         dealer.roundEnd(false);
@@ -319,13 +330,16 @@ public class BlackJack extends ApplicationAdapter
         gamer.changeMoney(-betPlaced);
         betPlaced = 0;
         gamer.roundEnd(false);
+
         if (gamer.getMoney() <= 0)
           roundState = -3;
-        roundState = -1;
+        else
+          roundState = -1;
+
         break;
       case -30:
-        gamer.changeMoney(500);
-        roundState = 0;
+        gamer.gameOver(500);
+        roundState = -2;
         break;
     }
   }

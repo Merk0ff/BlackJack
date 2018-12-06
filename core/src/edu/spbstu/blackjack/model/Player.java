@@ -34,6 +34,15 @@ public final class Player
   }
 
   /**
+   * This method you should call when money smaller than 0.
+   * @param M Tish is count of new money.
+   */
+  public void gameOver(Integer M)
+  {
+     money = M;
+  }
+
+  /**
    * This method get a card to cards from card pool.
    * @param C This is a current round card pool.
    */
@@ -97,10 +106,30 @@ public final class Player
   public Integer getCardSum()
   {
     Integer sum = 0;
-
+    boolean isAce = false;
     for (Card c : cards)
       if (c.isVisibility())
-        sum += c.getFace().ordinal() + 2;
+        switch (c.getFace())
+        {
+          case ACE:
+            isAce = true;
+            break;
+
+          case KING:
+          case JACK:
+          case QUEEN:
+            sum += 10;
+            break;
+
+          default:
+            sum += c.getFace().ordinal() + 2;
+        }
+
+    if (isAce)
+      if (sum >= 21)
+        sum += 1;
+      else
+        sum += 11;
 
     return sum;
   }
